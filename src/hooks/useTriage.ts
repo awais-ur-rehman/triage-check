@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { TriageResponse, TriageState } from '../types/triage';
+import type { TriageState } from '../types/triage';
 import { triageSymptoms } from '../utils/gemini';
 
 export function useTriage() {
