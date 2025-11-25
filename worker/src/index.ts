@@ -14,7 +14,7 @@ const corsHeaders = (origin: string) => ({
 export default {
     async fetch(request: Request, env: Env): Promise<Response> {
         const origin = request.headers.get('Origin') || '';
-        const allowedOrigins = [env.ALLOWED_ORIGIN, 'http://localhost:5173', 'http://localhost:3000'];
+        const allowedOrigins = [env.ALLOWED_ORIGIN, 'http://localhost:5173', 'http://localhost:3000', 'https://triage-check.vercel.app'];
         const isAllowed = allowedOrigins.some(o => origin.startsWith(o) || origin.includes('vercel.app'));
 
         if (request.method === 'OPTIONS') {
