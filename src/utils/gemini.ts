@@ -1,80 +1,27 @@
 import type { TriageResponse } from '../types/triage';
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const WORKER_URL = 'https://triage-check-api.symptom-checker.workers.dev';
 
-export async function triageSymptoms(symptoms: string): Promise<TriageResponse> {
-    if (!API_KEY) {
-        throw new Error('Gemini API Key is not configured');
+const languageMap: Record<string, string> = {
+    en: 'English',
+    ur: 'Urdu',
+    ps: 'Pashto',
+    pa: 'Punjabi',
+    sd: 'Sindhi',
+};
+
+export async function triageSymptoms(symptoms: string, language: string): Promise<TriageResponse> {
+    const response = await fetch(WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symptoms, language: languageMap[language] || 'English' }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.error || 'Failed to analyze symptoms');
     }
 
-    const prompt = `
-    You are an expert medical triage assistant. Your goal is to analyze the patient's symptoms and categorize them into one of three categories:
-    1. Emergency: Immediate medical attention required (e.g., chest pain, severe bleeding, difficulty breathing, stroke signs, trauma).
-    2. OPD: Outpatient Department visit recommended (e.g., persistent pain, infection signs, non-life-threatening issues).
-    3. Home Care: Can be managed at home (e.g., mild cold, minor cuts, fatigue).
-
-    LANGUAGE SUPPORT:
-    - You MUST detect the language of the user's input (English, Urdu, Punjabi, Pashto, or Sindhi).
-    - You MUST respond in the SAME language as the user's input.
-    - If the user writes in Urdu/Punjabi/Pashto/Sindhi, your explanation and disclaimer MUST be in that language.
-    - The "triage" field should always be in English (Emergency, OPD, or Home Care).
-
-    Safety Rules:
-    - If ANY red-flag symptom is present (chest pain, shortness of breath, severe bleeding, unconsciousness, etc.), classify as "Emergency".
-    - Do NOT provide a diagnosis.
-    - Do NOT suggest specific medications.
-    - ALWAYS include a disclaimer in the user's language.
-
-    Analyze the following symptoms: "${symptoms}"
-
-    Return the result strictly in the following JSON format:
-    {
-      "triage": "Emergency" | "OPD" | "Home Care",
-      "explanation": "A short explanation in the USER'S LANGUAGE of why this category was chosen.",
-      "red_flags_detected": ["List of any red flags found in USER'S LANGUAGE, or empty array"],
-      "disclaimer": "Disclaimer in USER'S LANGUAGE stating this is an AI-based assessment and NOT a medical diagnosis. Please consult a doctor."
-    }
-  `;
-
-    try {
-        const response = await fetch(`${GEMINI_API_URL}?key=${API_KEY}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: prompt }]
-                }]
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error?.message || 'Failed to fetch from Gemini API');
-        }
-
-        const data = await response.json();
-        const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        if (!textResponse) {
-            throw new Error('Invalid response format from Gemini');
-        }
-
-        // Clean up markdown code blocks if present
-        const jsonString = textResponse.replace(/```json\n?|\n?```/g, '').trim();
-
-        try {
-            const parsed: TriageResponse = JSON.parse(jsonString);
-            return parsed;
-        } catch (parseError) {
-            console.error('JSON Parse Error:', textResponse);
-            throw new Error('Failed to parse AI response');
-        }
-
-    } catch (error) {
-        console.error('Gemini API Error:', error);
-        throw error;
-    }
+    return data as TriageResponse;
 }

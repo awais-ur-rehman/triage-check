@@ -9,7 +9,7 @@ export function useTriage() {
         error: null,
     });
 
-    const analyzeSymptoms = async (symptoms: string) => {
+    const analyzeSymptoms = async (symptoms: string, language: string = 'en') => {
         if (!symptoms.trim()) {
             setState(prev => ({ ...prev, error: 'Please enter symptoms.' }));
             return;
@@ -18,7 +18,7 @@ export function useTriage() {
         setState({ result: null, loading: true, error: null });
 
         try {
-            const result = await triageSymptoms(symptoms);
+            const result = await triageSymptoms(symptoms, language);
             setState({ result, loading: false, error: null });
         } catch (err) {
             setState({

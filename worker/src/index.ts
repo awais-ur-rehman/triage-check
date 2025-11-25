@@ -36,7 +36,7 @@ export default {
         }
 
         try {
-            const { symptoms } = await request.json() as { symptoms: string };
+            const { symptoms, language = 'English' } = await request.json() as { symptoms: string; language?: string };
 
             if (!symptoms || typeof symptoms !== 'string') {
                 return new Response(JSON.stringify({ error: 'Symptoms are required' }), {
@@ -51,26 +51,27 @@ export default {
         2. OPD: Outpatient Department visit recommended (e.g., persistent pain, infection signs, non-life-threatening issues).
         3. Home Care: Can be managed at home (e.g., mild cold, minor cuts, fatigue).
 
-        LANGUAGE SUPPORT:
-        - You MUST detect the language of the user's input (English, Urdu, Punjabi, Pashto, or Sindhi).
-        - You MUST respond in the SAME language as the user's input.
-        - If the user writes in Urdu/Punjabi/Pashto/Sindhi, your explanation and disclaimer MUST be in that language.
+        IMPORTANT LANGUAGE INSTRUCTION:
+        - The user has selected "${language}" as their preferred language.
+        - You MUST respond in ${language} language.
+        - The "explanation" and "disclaimer" fields MUST be written in ${language}.
         - The "triage" field should always be in English (Emergency, OPD, or Home Care).
+        - The "red_flags_detected" array items should be in ${language}.
 
         Safety Rules:
         - If ANY red-flag symptom is present (chest pain, shortness of breath, severe bleeding, unconsciousness, etc.), classify as "Emergency".
         - Do NOT provide a diagnosis.
         - Do NOT suggest specific medications.
-        - ALWAYS include a disclaimer in the user's language.
+        - ALWAYS include a disclaimer in ${language}.
 
         Analyze the following symptoms: "${symptoms}"
 
         Return the result strictly in the following JSON format:
         {
           "triage": "Emergency" | "OPD" | "Home Care",
-          "explanation": "A short explanation in the USER'S LANGUAGE of why this category was chosen.",
-          "red_flags_detected": ["List of any red flags found in USER'S LANGUAGE, or empty array"],
-          "disclaimer": "Disclaimer in USER'S LANGUAGE stating this is an AI-based assessment and NOT a medical diagnosis. Please consult a doctor."
+          "explanation": "A short explanation in ${language} of why this category was chosen.",
+          "red_flags_detected": ["List of any red flags found in ${language}, or empty array"],
+          "disclaimer": "Disclaimer in ${language} stating this is an AI-based assessment and NOT a medical diagnosis. Please consult a doctor."
         }
       `;
 
@@ -114,4 +115,3 @@ export default {
         }
     },
 };
-
